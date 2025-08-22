@@ -1,0 +1,55 @@
+<script>
+  function toggleWadah() {
+    const select = document.getElementById('adaJentik');
+    const wadahGroup = document.getElementById('wadahGroup');
+    wadahGroup.style.display = select.value === "Ya" ? "block" : "none";
+  }
+
+  function kirimWA() {
+    if (!navigator.geolocation) {
+      document.getElementById('status').innerText = "Browser tidak mendukung GPS.";
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(position) {
+      var data = {
+        nama: document.getElementById('nama').value,
+        alamat: document.getElementById('alamat').value,
+        jentik: document.getElementById('adaJentik').value,
+        wadah: Array.from(document.querySelectorAll('#wadahGroup input[type="checkbox"]:checked'))
+                  .map(cb => cb.value)
+                  .join(', ') || "-",
+        liter: document.getElementById('liter').value || "-",
+        lat: position.coords.latitude,
+        lon: position.coords.longitude
+      };
+
+      // Kirim data ke Google Sheets lewat Web App
+      fetch("https://script.google.com/macros/s/AKfycbynC-bUysxzAGkgGn3iT_RYQn7ggNRi0CRVRUczyxDkqOxC1IfyaM_oFIWoefILw3gr5Q/exec", {
+        method: "POST",
+        body: JSON.stringify(data)
+      })
+      .then(res => res.text())
+      .then(response => {
+        console.log("Google Sheet:", response);
+      })
+      .catch(err => {
+        console.error("Error ke Google Sheet:", err);
+      });
+
+      // Kirim ke WhatsApp
+      var link = "https://wa.me/6282190381095?text=" +
+        encodeURIComponent("🦟 Pengaduan Jentik Nyamuk\n\n") +
+        encodeURIComponent("👤 Nama: " + data.nama + "\n") +
+        encodeURIComponent("🏠 Alamat: " + data.alamat + "\n") +
+        encodeURIComponent("🔍 Ada jentik? " + data.jentik + "\n") +
+        encodeURIComponent("🧺 Jenis Wadah: " + data.wadah + "\n") +
+        encodeURIComponent("💧 Perkiraan Jumlah Air: " + data.liter + " liter\n") +
+        encodeURIComponent("📍 Lokasi: https://maps.google.com/?q=" + data.lat + "," + data.lon);
+
+      window.open(link, '_blank');
+    }, function(error) {
+      document.getElementById('status').innerText = "Gagal mengambil lokasi. Aktifkan GPS.";
+    });
+  }
+</script>
